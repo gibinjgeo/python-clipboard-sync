@@ -1,25 +1,16 @@
--- Run this ONCE in the Supabase SQL editor:
--- https://app.supabase.com → your project → SQL Editor → New query
-
-CREATE TABLE IF NOT EXISTS clipboard_rooms (
-    room_code   TEXT        PRIMARY KEY,
-    content     TEXT        NOT NULL DEFAULT '',
-    sender      TEXT        NOT NULL DEFAULT '',   -- human-readable label
-    device_id   TEXT        NOT NULL DEFAULT '',   -- UUID, prevents echo
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Row Level Security: the room code itself is the shared secret
-ALTER TABLE clipboard_rooms ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "public_access" ON clipboard_rooms
-    FOR ALL
-    USING (true)
-    WITH CHECK (true);
-
--- If you already created the table without device_id, run just this line:
--- ALTER TABLE clipboard_rooms ADD COLUMN IF NOT EXISTS device_id TEXT NOT NULL DEFAULT '';
-
--- NOTE: Realtime Broadcast (used by the web app) is channel-based — no table
--- configuration needed. Just make sure Realtime is enabled in your Supabase
--- project (it is by default for all new projects).
+-- ClipShare v2 — WebRTC P2P mode
+--
+-- NO DATABASE TABLES NEEDED.
+--
+-- ClipShare now uses Supabase Realtime channels ONLY for the initial
+-- WebRTC handshake (3 tiny SDP messages, ~1 KB total per connection).
+-- All clipboard data travels directly between browsers via WebRTC (P2P).
+-- Nothing is stored — the signalling messages are transient WebSocket events.
+--
+-- Realtime channels are enabled by default on every Supabase project.
+-- You don't need to run any SQL.
+--
+-- ────────────────────────────────────────────────────────────────────────────
+-- If you created the old clipboard_rooms table from v1, clean it up:
+-- ────────────────────────────────────────────────────────────────────────────
+-- DROP TABLE IF EXISTS clipboard_rooms;

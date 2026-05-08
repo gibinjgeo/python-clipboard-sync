@@ -26,6 +26,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true   # automatically enables Pages if not already on
 
       # Only ship the files the browser actually needs
       - name: Prepare site
