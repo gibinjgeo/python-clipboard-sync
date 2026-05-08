@@ -220,28 +220,25 @@ Config is auto-generated at `~/.python_clipboard_sync/config.json`:
 
 ---
 
-## KDE Connect Concepts Reused
+## Design Decisions
 
-| KDE Connect concept | How we use it |
+| Decision | Rationale |
 |---|---|
-| UDP port 1716 for discovery | Same port (allows future interop) |
-| Identity packet over UDP | JSON broadcast with device_id, device_name, tcp_port |
-| TCP connection for data | asyncio TCP streams |
-| `pair` / accept model | Our pairing state machine |
-| Clipboard loop via timestamp | We extend with hash-based suppression window |
-| Plugin packet types | We implement clipboard + ping as packet types |
-| Protocol version in packets | We use a version info string in HKDF |
+| UDP port 1716 for discovery | Standard LAN discovery port |
+| JSON identity broadcast over UDP | Simple plaintext announce — device_id, device_name, tcp_port |
+| asyncio TCP streams for data | Native Python async, no extra framework needed |
+| Explicit pair / accept model | User-controlled trust — no auto-pairing |
+| Hash-based clipboard loop suppression | More reliable than timestamp-only approach |
+| Clipboard + ping as packet types | Minimal protocol surface |
+| HKDF version string in key derivation | Protocol version baked into shared secret |
 
-## KDE Connect Concepts NOT Used
+## Out of Scope
 
-| KDE Connect component | Reason skipped |
+| Feature | Reason |
 |---|---|
-| Qt / KDE Plasma | Entire framework — not needed |
-| D-Bus interfaces | Linux IPC system — not needed |
-| SSL/TLS certificates (QSslSocket) | We use ECDH+HMAC instead (simpler, no cert management) |
-| Avahi/mDNS discovery | Added complexity; UDP broadcast is sufficient for LAN |
-| KPluginFactory | Qt plugin system — not needed |
-| FileTransferJob | No file sync in scope |
+| D-Bus interfaces | Not needed for clipboard-only sync |
+| SSL/TLS certificates | ECDH + HMAC is simpler with no cert management overhead |
+| Avahi/mDNS discovery | UDP broadcast is sufficient for LAN |
+| File transfer | Out of scope |
 | Bluetooth backend | Out of scope |
 | Notification system | Out of scope |
-| SMS/media/mousepad plugins | Out of scope |

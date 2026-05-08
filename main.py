@@ -233,7 +233,7 @@ class App:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="python_clipboard_sync — lightweight KDE Connect-style clipboard sync"
+        description="python_clipboard_sync — lightweight cross-platform clipboard sync"
     )
     p.add_argument("--pair", metavar="IP", help="Initiate pairing with device at IP")
     p.add_argument("--ping", metavar="IP", help="Ping a paired device at IP")

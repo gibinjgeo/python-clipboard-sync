@@ -111,7 +111,7 @@ jobs:
           Architecture: amd64
           Maintainer: ${{ github.repository_owner }}
           Description: Lightweight clipboard sync daemon
-           KDE Connect-style clipboard sync for Linux and Windows.
+           Lightweight clipboard sync for Linux and Windows.
            Automatically shares clipboard content between paired devices
            over a local network using encrypted TCP connections.
           CTRL

@@ -1,7 +1,7 @@
 """
 UDP-based device discovery.
 
-Reuses KDE Connect's port 1716 concept:
+UDP-based LAN discovery:
   - Every device broadcasts a JSON identity packet over UDP every N seconds.
   - Every device listens on the same port for packets from others.
   - On discovery, a callback is called with (device_id, device_name, ip, tcp_port, public_key_b64).
