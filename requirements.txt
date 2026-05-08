@@ -1,11 +1,8 @@
-# Cryptography: ECDH key exchange, Fernet encryption, HKDF, HMAC
-cryptography>=42.0.0
+# Supabase Python client — used by cloud_client.py
+supabase>=2.0.0
 
-# Clipboard fallback for non-Wayland Linux (X11 / no wl-clipboard)
+# Clipboard fallback for non-Wayland Linux (X11 / no wl-clipboard binary)
 pyperclip>=1.8.2
 
-# Windows clipboard via win32clipboard / win32con (Windows only)
+# Windows clipboard (Windows only)
 pywin32>=306; sys_platform == "win32"
-
-# GUI: tkinter is part of the Python standard library but ships separately
-# on Debian/Ubuntu — install with:  sudo apt install python3-tk
