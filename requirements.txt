@@ -1,0 +1,8 @@
+# Core cryptography
+cryptography>=42.0.0
+
+# Clipboard fallback for non-Wayland Linux
+pyperclip>=1.8.2
+
+# Windows clipboard support (Windows only — optional on Linux/Mac)
+# pywin32>=306  # Uncomment on Windows: pip install pywin32
