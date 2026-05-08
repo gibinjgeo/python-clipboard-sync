@@ -4,6 +4,7 @@ python_clipboard_sync — entry point.
 Usage:
   python main.py                     # Start daemon (discover + sync clipboard)
   python main.py --gui               # Start with graphical interface
+  python main.py --cli               # Interactive terminal CLI (GUI fallback)
   python main.py --pair <ip>         # Initiate pairing with a specific device
   python main.py --ping <ip>         # Send a ping to a specific device
   python main.py --list-paired       # List all paired devices
@@ -29,6 +30,7 @@ def parse_args() -> argparse.Namespace:
         description="python_clipboard_sync — lightweight cross-platform clipboard sync"
     )
     p.add_argument("--gui",        action="store_true",  help="Launch graphical interface")
+    p.add_argument("--cli",        action="store_true",  help="Launch interactive terminal CLI")
     p.add_argument("--pair",       metavar="IP",         help="Initiate pairing with device at IP")
     p.add_argument("--ping",       metavar="IP",         help="Ping a paired device at IP")
     p.add_argument("--list-paired",action="store_true",  help="List paired devices")
@@ -45,6 +47,11 @@ def main() -> None:
     if args.gui:
         from gui import launch_gui
         launch_gui()
+        return
+
+    if args.cli:
+        from cli import launch_cli
+        launch_cli()
         return
 
     # Enable file logging for headless mode

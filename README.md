@@ -105,6 +105,12 @@ python main.py
 # Start the sync daemon (auto-discovers LAN peers, syncs clipboard)
 python main.py
 
+# Launch the graphical interface
+python main.py --gui
+
+# Launch the interactive terminal CLI (fallback if GUI doesn't work)
+python main.py --cli
+
 # Initiate pairing with a specific device IP
 python main.py --pair 192.168.1.42
 
@@ -119,6 +125,57 @@ python main.py --unpair <device_id>
 
 # Change device display name
 python main.py --set-name "My Laptop"
+```
+
+---
+
+## Interactive Terminal CLI
+
+Run `python main.py --cli` (or `python cli.py` directly) to get an interactive prompt.
+The daemon runs in the background while you type commands.
+
+```
+=== Clipboard Sync — Interactive CLI ===
+  Device : my-laptop  (a1b2c3d4...)
+  IP     : 192.168.1.10
+  Port   : 52300 (TCP/UDP)
+  Type "help" for commands.
+
+clipboardsync>
+```
+
+### Available commands
+
+| Command | Description |
+|---|---|
+| `status` | Show device name, ID, IP, port, and active sessions |
+| `scan` | List all devices discovered on the LAN (paired and unpaired) |
+| `paired` | List all paired devices |
+| `pair <ip>` | Initiate pairing with the device at the given IP |
+| `unpair <id>` | Remove a paired device (device ID prefix or exact name) |
+| `ping <ip>` | Ping a paired device and show round-trip time |
+| `name <new_name>` | Rename this device |
+| `help` | Show command reference |
+| `quit` / `exit` / `q` | Stop the daemon and exit |
+
+### Typical pairing workflow
+
+```
+# On both machines, start the CLI
+python main.py --cli
+
+# On machine A — wait a few seconds for discovery, then check who is on the LAN
+clipboardsync> scan
+
+# On machine A — pair with machine B's IP
+clipboardsync> pair 192.168.1.20
+
+# On machine B — a prompt appears automatically:
+# [PAIRING] Accept pairing from 'machine-a'? [y/N]:
+# Type y and press Enter
+
+# On both machines — verify the pairing code matches, then clipboard sync is active
+clipboardsync> paired
 ```
 
 ---
@@ -207,8 +264,8 @@ Config is auto-generated at `~/.python_clipboard_sync/config.json`:
 
 ```json
 {
-  "udp_port": 1716,
-  "tcp_port": 1716,
+  "udp_port": 52300,
+  "tcp_port": 52300,
   "broadcast_interval": 10.0,
   "timestamp_tolerance_sec": 30,
   "pairing_timeout_sec": 30,
@@ -224,7 +281,7 @@ Config is auto-generated at `~/.python_clipboard_sync/config.json`:
 
 | Decision | Rationale |
 |---|---|
-| UDP port 1716 for discovery | Standard LAN discovery port |
+| UDP port 52300 for discovery | Avoids conflict with KDE Connect (ports 1714–1764) |
 | JSON identity broadcast over UDP | Simple plaintext announce — device_id, device_name, tcp_port |
 | asyncio TCP streams for data | Native Python async, no extra framework needed |
 | Explicit pair / accept model | User-controlled trust — no auto-pairing |
