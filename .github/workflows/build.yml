@@ -1,0 +1,154 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+env:
+  APP_NAME: clipboard-sync
+
+jobs:
+  # ─── Windows .exe ──────────────────────────────────────────────────────────
+  build-windows:
+    name: Build Windows exe
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pywin32 -r requirements.txt pyinstaller
+
+      - name: Build exe
+        run: >
+          pyinstaller
+          --onefile
+          --name clipboard-sync
+          --clean
+          main.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/clipboard-sync.exe
+
+  # ─── Linux .deb ────────────────────────────────────────────────────────────
+  build-deb:
+    name: Build Linux deb
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system packages
+        run: sudo apt-get install -y patchelf binutils
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build binary with PyInstaller
+        run: >
+          pyinstaller
+          --onefile
+          --name clipboard-sync
+          --clean
+          main.py
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0+build.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assemble .deb package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          PKG=deb_root
+
+          # Filesystem layout
+          install -Dm755 dist/clipboard-sync "$PKG/usr/bin/clipboard-sync"
+          install -dm755 "$PKG/lib/systemd/user"
+
+          # Systemd user service
+          cat > "$PKG/lib/systemd/user/clipboard-sync.service" << 'SERVICE'
+          [Unit]
+          Description=Clipboard Sync daemon
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/bin/clipboard-sync
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=default.target
+          SERVICE
+
+          # DEBIAN control file
+          install -dm755 "$PKG/DEBIAN"
+          cat > "$PKG/DEBIAN/control" << CTRL
+          Package: clipboard-sync
+          Version: ${VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Maintainer: ${{ github.repository_owner }}
+          Description: Lightweight clipboard sync daemon
+           KDE Connect-style clipboard sync for Linux and Windows.
+           Automatically shares clipboard content between paired devices
+           over a local network using encrypted TCP connections.
+          CTRL
+
+          # Post-install: enable user service hint
+          cat > "$PKG/DEBIAN/postinst" << 'POST'
+          #!/bin/sh
+          set -e
+          echo "Run: systemctl --user enable --now clipboard-sync"
+          POST
+          chmod 755 "$PKG/DEBIAN/postinst"
+
+          dpkg-deb --build "$PKG" "clipboard-sync_${VERSION}_amd64.deb"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: clipboard-sync_*.deb
+
+  # ─── GitHub Release (tag pushes only) ──────────────────────────────────────
+  release:
+    name: Create GitHub Release
+    needs: [build-windows, build-deb]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/windows-exe/clipboard-sync.exe
+            artifacts/linux-deb/clipboard-sync_*.deb
