@@ -13,8 +13,8 @@ _DEFAULT_DATA_DIR = str(Path.home() / ".python_clipboard_sync")
 @dataclass
 class Config:
     # Network
-    udp_port: int = 1716          # Standard LAN discovery port
-    tcp_port: int = 1716
+    udp_port: int = 52300
+    tcp_port: int = 52300
     broadcast_interval: float = 10.0   # seconds between UDP identity broadcasts
 
     # Security / anti-replay

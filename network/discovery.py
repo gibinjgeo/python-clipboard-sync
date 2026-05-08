@@ -11,7 +11,7 @@ Identity UDP payload (NOT a full signed Packet — it's sent in plaintext intent
   "packet_type": "identity",
   "device_id":   "...",
   "device_name": "...",
-  "tcp_port":    1716,
+  "tcp_port":    52300,
   "public_key":  "<b64>"
 }
 """
