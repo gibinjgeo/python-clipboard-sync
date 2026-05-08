@@ -272,9 +272,17 @@ class ClipboardSyncServer:
         self._server: Optional[asyncio.AbstractServer] = None
 
     async def start(self) -> None:
-        self._server = await asyncio.start_server(
-            self._handle_connection, self._host, self._port
-        )
+        if self._server is not None:
+            return  # already listening
+        try:
+            self._server = await asyncio.start_server(
+                self._handle_connection, self._host, self._port,
+                reuse_address=True,
+            )
+        except OSError as exc:
+            raise OSError(
+                f"Cannot bind to port {self._port} — is another instance already running? ({exc})"
+            ) from exc
         addrs = [str(s.getsockname()) for s in self._server.sockets]
         log.info(f"TCP server listening on {addrs}")
 

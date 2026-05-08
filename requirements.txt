@@ -1,8 +1,11 @@
-# Core cryptography
+# Cryptography: ECDH key exchange, Fernet encryption, HKDF, HMAC
 cryptography>=42.0.0
 
-# Clipboard fallback for non-Wayland Linux
+# Clipboard fallback for non-Wayland Linux (X11 / no wl-clipboard)
 pyperclip>=1.8.2
 
-# Windows clipboard support (Windows only — optional on Linux/Mac)
-# pywin32>=306  # Uncomment on Windows: pip install pywin32
+# Windows clipboard via win32clipboard / win32con (Windows only)
+pywin32>=306; sys_platform == "win32"
+
+# GUI: tkinter is part of the Python standard library but ships separately
+# on Debian/Ubuntu — install with:  sudo apt install python3-tk
