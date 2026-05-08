@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ClipShare</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #21262d;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --dim:      #8b949e;
+  --blue:     #388bfd;
+  --green:    #3fb950;
+  --red:      #f85149;
+  --yellow:   #d29922;
+  --r:        10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100dvh;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.wrap { width: 100%; max-width: 480px; }
+
+/* ── Typography ── */
+h1      { font-size: 20px; font-weight: 700; }
+.dimtxt { color: var(--dim); font-size: 13px; }
+label   { display: block; font-size: 12px; font-weight: 600; color: var(--dim);
+          text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+/* ── Inputs ── */
+input, textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 15px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color .15s;
+  font-family: inherit;
+}
+input:focus, textarea:focus { border-color: var(--blue); }
+textarea { resize: vertical; min-height: 90px; }
+
+/* ── Buttons ── */
+button {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: filter .15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+button:hover     { filter: brightness(1.15); }
+button:active    { filter: brightness(.9); }
+button:disabled  { opacity: .4; cursor: not-allowed; }
+.btn-ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+.btn-green { background: var(--green); color: #000; }
+.btn-red   { background: var(--red); }
+.btn-full  { width: 100%; margin-top: 8px; }
+
+/* ── Row ── */
+.row { display: flex; gap: 8px; align-items: stretch; }
+.row input { flex: 1; }
+
+/* ── Status badge ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 9px; border-radius: 12px;
+}
+.badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.badge-green  { background: #0d2b0e; color: var(--green); }
+.badge-yellow { background: #2b1d00; color: var(--yellow); }
+.badge-gray   { background: var(--surface2); color: var(--dim); }
+
+/* ── Banner ── */
+.banner {
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.banner-warn { background: #2b1d00; border: 1px solid #4a3500; color: var(--yellow); }
+.banner-info { background: #0c1f3a; border: 1px solid #1a4080; color: #79b8ff; }
+
+/* ── Received content ── */
+.clip-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 56px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.clip-placeholder { color: var(--dim); font-style: italic; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 9px 18px; border-radius: 20px;
+  font-size: 13px; opacity: 0; transition: opacity .25s;
+  pointer-events: none; white-space: nowrap; z-index: 999;
+  max-width: calc(100vw - 32px); text-align: center;
+}
+#toast.on { opacity: 1; }
+
+/* ── Mono room code ── */
+.room-code { font-family: monospace; font-size: 22px; letter-spacing: 4px; font-weight: 700; }
+
+/* ── Header ── */
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* ── Hidden ── */
+.hidden { display: none !important; }
+
+/* ── Sync dot ── */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.dot-on  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot-off { background: var(--dim); }
+
+/* ── Details / summary ── */
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--dim); font-size: 13px; user-select: none; }
+details .inner { padding: 10px 0 0; font-size: 13px; color: var(--dim); line-height: 1.7; }
+details ol, details ul { padding-left: 18px; }
+
+/* ── Spacing helpers ── */
+.mt8  { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.gap4 { gap: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="toast"></div>
+
+<!-- ══════════════════════ SETUP SCREEN ══════════════════════ -->
+<div id="setup-screen">
+  <header>
+    <h1>📋 ClipShare</h1>
+  </header>
+
+  <div class="banner banner-info">
+    One-time setup — credentials are saved only in <strong>this browser</strong>.
+  </div>
+
+  <div class="card">
+    <label>Supabase Project URL</label>
+    <input id="s-url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+
+    <label class="mt12">Anon / Public Key</label>
+    <input id="s-key" type="text" placeholder="eyJ…" autocomplete="off">
+
+    <button class="btn-full" onclick="saveSetup()">Save & Start →</button>
+
+    <details>
+      <summary>How to get these (free, 2 min)</summary>
+      <div class="inner">
+        <ol>
+          <li>Sign up free at <strong>supabase.com</strong> → New project</li>
+          <li>Open <strong>SQL Editor</strong> → paste <code>supabase_setup.sql</code> → Run</li>
+          <li>Go to <strong>Project Settings → API</strong></li>
+          <li>Copy <strong>Project URL</strong> and <strong>anon/public key</strong></li>
+        </ol>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ══════════════════════ MAIN APP ══════════════════════ -->
+<div id="app-screen" class="hidden">
+  <header>
+    <h1>📋 ClipShare</h1>
+    <button class="btn-ghost" style="padding:7px 10px;font-size:16px;" onclick="goSetup()" title="Settings">⚙️</button>
+  </header>
+
+  <!-- Alone warning -->
+  <div id="alone-banner" class="banner banner-warn hidden">
+    ⚠️ Only you are in this room. Share the room code with another device to start syncing.
+  </div>
+
+  <!-- ── Room card ── -->
+  <div class="card">
+
+    <!-- Join UI -->
+    <div id="join-ui">
+      <label>Room Code</label>
+      <div class="row">
+        <input id="room-input" type="text" placeholder="Enter code or generate one"
+               maxlength="8" style="text-transform:uppercase; letter-spacing:2px;"
+               oninput="this.value=this.value.toUpperCase()"
+               onkeydown="if(event.key==='Enter')joinRoom()">
+        <button class="btn-ghost" onclick="genAndJoin()">Generate</button>
+        <button onclick="joinRoom()">Join</button>
+      </div>
+      <p class="dimtxt mt8">Generate on one device, enter the same code on others.</p>
+    </div>
+
+    <!-- Active room UI -->
+    <div id="active-ui" class="hidden">
+      <div class="row" style="align-items:flex-start; margin-bottom:12px;">
+        <div style="flex:1;">
+          <p class="dimtxt" style="margin-bottom:2px;">Room</p>
+          <span class="room-code" id="room-display">——</span>
+        </div>
+        <div id="dev-count" class="badge badge-yellow">1 device</div>
+      </div>
+
+      <label>Your device name</label>
+      <input id="dev-label" type="text" placeholder="e.g. My Android, Kali, Windows"
+             maxlength="30" oninput="updateLabel(this.value)">
+
+      <button class="btn-ghost btn-red btn-full mt8" onclick="leaveRoom()">Leave room</button>
+    </div>
+  </div>
+
+  <!-- ── Sync + Receive (shown only when in room) ── -->
+  <div id="main-ui" class="hidden">
+
+    <!-- Auto-sync card -->
+    <div class="card">
+      <div class="row" style="align-items:center;">
+        <span id="sync-dot" class="dot dot-off"></span>
+        <span id="sync-label" style="flex:1;font-size:14px;">Auto-sync off</span>
+        <button id="sync-btn" onclick="toggleSync()">Enable</button>
+      </div>
+      <p id="sync-note" class="dimtxt mt8"></p>
+    </div>
+
+    <!-- Received card -->
+    <div class="card">
+      <label>Received</label>
+      <div id="recv-box" class="clip-box clip-placeholder">Waiting for content from other devices…</div>
+      <p id="recv-meta" class="dimtxt mt8"></p>
+      <button id="copy-btn" class="btn-green btn-full mt8" onclick="copyRecv()" disabled>
+        Copy to clipboard
+      </button>
+    </div>
+
+    <!-- Manual send card -->
+    <div class="card">
+      <label>Send manually</label>
+      <textarea id="send-text" placeholder="Type or paste here, then tap Send →"></textarea>
+      <button class="btn-full mt8" onclick="sendManual()">Send →</button>
+    </div>
+
+  </div><!-- /main-ui -->
+</div><!-- /app-screen -->
+</div><!-- /wrap -->
+
+<script>
+'use strict';
+
+// ── Library reference ────────────────────────────────────────────────────────
+const { createClient } = window.supabase;
+
+// ── Persistent identity ──────────────────────────────────────────────────────
+const MY_ID = (() => {
+  let id = localStorage.getItem('cs_device_id');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('cs_device_id', id); }
+  return id;
+})();
+
+// ── State ────────────────────────────────────────────────────────────────────
+let sb          = null;   // Supabase client
+let rtChannel   = null;   // Realtime channel
+let pollTimer   = null;   // DB poll fallback (for Python daemon)
+let syncTimer   = null;   // Clipboard read loop
+let syncOn      = false;
+let room        = '';
+let myLabel     = localStorage.getItem('cs_label') || guessLabel();
+let lastSent    = '';     // content we most recently sent (suppress echo)
+let lastDbTs    = '';     // last seen DB updated_at
+let recvContent = '';     // most recent received content
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+function boot() {
+  const cfg = loadCfg();
+  if (cfg) { sb = createClient(cfg.url, cfg.key); show('app-screen'); hide('setup-screen'); }
+  else       { show('setup-screen'); hide('app-screen'); }
+}
+
+// ── Setup screen ─────────────────────────────────────────────────────────────
+function saveSetup() {
+  const url = q('#s-url').value.trim();
+  const key = q('#s-key').value.trim();
+  if (!url || !key)                     { toast('Fill in both fields.'); return; }
+  if (!url.startsWith('https://'))      { toast('URL must start with https://'); return; }
+  localStorage.setItem('cs_cfg', JSON.stringify({ url, key }));
+  sb = createClient(url, key);
+  show('app-screen'); hide('setup-screen');
+  toast('Saved!');
+}
+
+function goSetup() {
+  const cfg = loadCfg();
+  if (cfg) { q('#s-url').value = cfg.url; q('#s-key').value = cfg.key; }
+  show('setup-screen'); hide('app-screen');
+}
+
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem('cs_cfg')); } catch { return null; }
+}
+
+// ── Room join / leave ─────────────────────────────────────────────────────────
+function genAndJoin() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  q('#room-input').value = Array.from({length: 6}, () =>
+    chars[Math.floor(Math.random() * chars.length)]).join('');
+  joinRoom();
+}
+
+async function joinRoom() {
+  const code = q('#room-input').value.trim().toUpperCase();
+  if (!code)     { toast('Enter a room code first.'); return; }
+  if (!sb)       { toast('Supabase not set up.'); return; }
+
+  room = code;
+
+  // Fetch latest persisted content (for late joiners)
+  try {
+    const { data } = await sb.from('clipboard_rooms')
+      .select('*').eq('room_code', room).maybeSingle();
+    if (data?.content) {
+      showRecv(data.content, data.sender, data.updated_at);
+      lastDbTs = data.updated_at;
+    }
+  } catch (_) {}
+
+  // Open Realtime channel
+  rtChannel = sb.channel(`room:${room}`, {
+    config: {
+      broadcast: { self: false },
+      presence:  { key: MY_ID }
+    }
+  })
+  .on('broadcast', { event: 'clip' }, ({ payload }) => {
+    if (payload.id === MY_ID) return; // should not happen (self:false), but guard anyway
+    onReceive(payload.text, payload.label, payload.ts);
+  })
+  .on('presence', { event: 'sync'  }, syncPresence)
+  .on('presence', { event: 'join'  }, syncPresence)
+  .on('presence', { event: 'leave' }, syncPresence)
+  .subscribe(async status => {
+    if (status === 'SUBSCRIBED') {
+      await rtChannel.track({ id: MY_ID, label: myLabel, at: Date.now() });
+      activateRoom(code);
+    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+      toast('⚠ Connection error — check Supabase credentials.');
+    }
+  });
+
+  // DB poll fallback for Python daemon (every 3 s)
+  pollTimer = setInterval(dbPoll, 3000);
+}
+
+function activateRoom(code) {
+  q('#room-display').textContent = code;
+  q('#dev-label').value = myLabel;
+  hide('join-ui'); show('active-ui'); show('main-ui');
+}
+
+async function leaveRoom() {
+  stopSync();
+  clearInterval(pollTimer); pollTimer = null;
+  if (rtChannel) {
+    await rtChannel.untrack();
+    await sb.removeChannel(rtChannel);
+    rtChannel = null;
+  }
+  room = ''; lastSent = ''; lastDbTs = ''; recvContent = '';
+  hide('active-ui'); hide('main-ui'); hide('alone-banner');
+  show('join-ui');
+  q('#recv-box').textContent = 'Waiting for content from other devices…';
+  q('#recv-box').classList.add('clip-placeholder');
+  q('#recv-meta').textContent = '';
+  q('#copy-btn').disabled = true;
+  q('#room-input').value = '';
+}
+
+// ── Presence ──────────────────────────────────────────────────────────────────
+function syncPresence() {
+  if (!rtChannel) return;
+  const n = Object.keys(rtChannel.presenceState()).length;
+  const badge = q('#dev-count');
+  badge.textContent = `${n} device${n !== 1 ? 's' : ''}`;
+  if (n <= 1) {
+    badge.className = 'badge badge-yellow';
+    show('alone-banner');
+  } else {
+    badge.className = 'badge badge-green';
+    hide('alone-banner');
+  }
+}
+
+// ── Send ──────────────────────────────────────────────────────────────────────
+async function broadcast(text) {
+  if (!room) return;
+  lastSent = text;
+
+  // 1. Realtime broadcast (instant, all open tabs)
+  if (rtChannel) {
+    await rtChannel.send({
+      type: 'broadcast', event: 'clip',
+      payload: { text, id: MY_ID, label: myLabel, ts: new Date().toISOString() }
+    });
+  }
+
+  // 2. DB upsert (persists for late joiners + picked up by Python daemon)
+  await sb.from('clipboard_rooms').upsert({
+    room_code:  room,
+    content:    text,
+    sender:     myLabel,
+    device_id:  MY_ID,
+    updated_at: new Date().toISOString()
+  });
+}
+
+// ── Receive ───────────────────────────────────────────────────────────────────
+async function onReceive(text, label, ts) {
+  showRecv(text, label, ts);
+  lastDbTs   = ts || lastDbTs;
+  recvContent = text;
+  lastSent   = text; // prevent echo if auto-sync reads it back
+
+  // Try automatic clipboard write
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(`📋 Clipboard updated  ←  ${label}`);
+  } catch {
+    toast(`📋 Received from ${label} — tap Copy`);
+  }
+}
+
+function showRecv(text, label, ts) {
+  recvContent = text;
+  const box = q('#recv-box');
+  box.textContent = text;
+  box.classList.remove('clip-placeholder');
+  const time = ts ? new Date(ts).toLocaleTimeString() : '';
+  q('#recv-meta').textContent = `From ${label || 'unknown'}${time ? '  ·  ' + time : ''}`;
+  q('#copy-btn').disabled = false;
+}
+
+async function copyRecv() {
+  if (!recvContent) return;
+  try {
+    await navigator.clipboard.writeText(recvContent);
+    toast('Copied!');
+  } catch {
+    toast('⚠ Select text above and copy manually');
+  }
+}
+
+async function sendManual() {
+  const text = q('#send-text').value;
+  if (!text.trim()) { toast('Nothing to send.'); return; }
+  await broadcast(text);
+  toast('Sent!');
+  q('#send-text').value = '';
+}
+
+// ── DB poll fallback (catches Python daemon writes) ────────────────────────────
+async function dbPoll() {
+  if (!room || !sb) return;
+  try {
+    const { data } = await sb.from('clipboard_rooms')
+      .select('*').eq('room_code', room).maybeSingle();
+    if (!data?.content) return;
+    if (data.updated_at === lastDbTs) return;     // no change
+    if (data.device_id === MY_ID) { lastDbTs = data.updated_at; return; } // our own write
+    lastDbTs = data.updated_at;
+    onReceive(data.content, data.sender, data.updated_at);
+  } catch (_) {}
+}
+
+// ── Auto clipboard sync ───────────────────────────────────────────────────────
+async function toggleSync() {
+  syncOn ? stopSync() : await startSync();
+}
+
+async function startSync() {
+  if (!navigator.clipboard?.readText) {
+    setNote('Auto-sync not supported in this browser. Use manual send below.');
+    return;
+  }
+
+  // Trigger permission prompt with a test read
+  try {
+    const init = await navigator.clipboard.readText();
+    lastSent = init; // don't immediately broadcast what's already there
+  } catch (err) {
+    if (err.name === 'NotAllowedError') {
+      setNote('⚠ Clipboard permission denied. Enable in browser settings, or use manual send.');
+    } else {
+      setNote(`⚠ ${err.message}. Use manual send below.`);
+    }
+    return;
+  }
+
+  syncOn = true;
+  q('#sync-btn').textContent = 'Disable';
+  q('#sync-dot').className = 'dot dot-on';
+  q('#sync-label').textContent = 'Auto-sync on';
+  setNote('Anything you copy is automatically sent to all devices in this room.');
+
+  syncTimer = setInterval(async () => {
+    if (!syncOn || !room) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text !== lastSent) {
+        await broadcast(text);
+      }
+    } catch (_) {
+      // read failed (page not focused, permission revoked) — silent
+    }
+  }, 1000);
+}
+
+function stopSync() {
+  syncOn = false;
+  clearInterval(syncTimer); syncTimer = null;
+  q('#sync-btn').textContent = 'Enable';
+  q('#sync-dot').className = 'dot dot-off';
+  q('#sync-label').textContent = 'Auto-sync off';
+  setNote('');
+}
+
+function setNote(msg) { q('#sync-note').textContent = msg; }
+
+// ── Device label ──────────────────────────────────────────────────────────────
+function updateLabel(val) {
+  myLabel = val;
+  localStorage.setItem('cs_label', val);
+  if (rtChannel) rtChannel.track({ id: MY_ID, label: val, at: Date.now() });
+}
+
+// ── Tab close cleanup ─────────────────────────────────────────────────────────
+window.addEventListener('pagehide', () => {
+  if (rtChannel) rtChannel.untrack();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function q(sel)    { return document.querySelector(sel); }
+function show(id)  { document.getElementById(id).classList.remove('hidden'); }
+function hide(id)  { document.getElementById(id).classList.add('hidden'); }
+
+function guessLabel() {
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua))          return 'Android';
+  if (/iphone|ipad|ipod/i.test(ua)) return 'iOS';
+  if (/windows/i.test(ua))          return 'Windows';
+  if (/mac/i.test(ua))              return 'Mac';
+  if (/linux/i.test(ua))            return 'Linux';
+  return 'Browser';
+}
+
+let _toastTimer;
+function toast(msg) {
+  const el = q('#toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('on'), 2800);
+}
+
+// ── Go ────────────────────────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>

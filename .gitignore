@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Streamlit secrets — never commit real credentials
+.streamlit/secrets.toml
+
+# Runtime data
+~/.python_clipboard_sync/
